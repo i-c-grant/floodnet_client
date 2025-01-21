@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "floodnet-client"
+version = "0.1.0"
+authors = [
+    {name = "FloodNet Team"}
+]
+description = "A simple client for the NYC FloodNet sensor network"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.28.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+spatial = [
+    "geopandas>=0.10.0",
+    "shapely>=2.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/floodnet_client"]
