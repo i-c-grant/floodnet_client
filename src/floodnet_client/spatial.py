@@ -12,8 +12,8 @@ try:
 except ImportError:
     SPATIAL_AVAILABLE = False
 
-from src.clients.SimpleFloodNetClient import FloodNetClient
-from src.clients.schemas import Deployment, DepthReading
+from .client import FloodNetClient
+from .schemas import Deployment, DepthReading
 
 if TYPE_CHECKING:
     # Type hints for static type checkers, doesn't affect runtime

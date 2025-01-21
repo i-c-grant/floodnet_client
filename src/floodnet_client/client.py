@@ -13,7 +13,7 @@ from typing import List, Optional
 
 import requests
 
-from src.clients.schemas import Deployment, DeploymentResponse, DepthReading, DepthResponse
+from .schemas import Deployment, DeploymentResponse, DepthReading, DepthResponse
 
 logger = logging.getLogger(__name__)
 
