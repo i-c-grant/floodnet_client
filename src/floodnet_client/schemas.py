@@ -25,8 +25,8 @@ class Deployment(BaseModel):
     deploy_type: str
     location: Location
     image: str | None = None
-    sensor_mount: str
-    mounted_over: str
+    sensor_mount: str | None = None
+    mounted_over: str | None = None
     sensor_status: str
     longitude: Optional[float] = None  # Added after processing
     latitude: Optional[float] = None   # Added after processing
