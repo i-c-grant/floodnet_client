@@ -113,15 +113,25 @@ class FloodNetClient:
                 )
                 response.raise_for_status()
                 
-                # Parse and validate response directly from JSON
+                # Parse raw JSON and filter valid readings
                 try:
-                    depth_response = DepthResponse.model_validate_json(response.text)
+                    raw_data = response.json()
+                    valid_readings = []
+                    for reading in raw_data.get("depth_data", []):
+                        try:
+                            valid_reading = DepthReading.model_validate(reading)
+                            valid_readings.append(valid_reading)
+                        except ValueError as e:
+                            logger.info("Skipping invalid reading: %s", str(e))
+                            continue
+                    
+                    logger.info("Got %d valid readings for deployment %s", 
+                                len(valid_readings), dep_id)
+                    all_readings.extend(valid_readings)
+                    
                 except ValueError as e:
                     logger.error("Invalid JSON response for deployment %s: %s", dep_id, str(e))
                     continue
-                logger.debug("Got %d readings for deployment %s", 
-                            len(depth_response.depth_data), dep_id)
-                all_readings.extend(depth_response.depth_data)
                 
             except Exception as e:
                 logger.error("Error querying deployment %s: %s", dep_id, str(e))
