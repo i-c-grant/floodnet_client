@@ -1,50 +1,28 @@
 """Spatial extensions for the FloodNet client."""
-
-"""Spatial extensions for the FloodNet client."""
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Union
 from datetime import datetime
-
-try:
-    import geopandas as gpd
-    from shapely.geometry import Point, Polygon, MultiPolygon
-    from shapely.geometry.base import BaseGeometry
-    SPATIAL_AVAILABLE = True
-except ImportError:
-    SPATIAL_AVAILABLE = False
+import geopandas as gpd
+from shapely.geometry import Point, Polygon, MultiPolygon
 
 from .client import FloodNetClient
 from .schemas import Deployment, DepthReading
 
-if TYPE_CHECKING:
-    # Type hints for static type checkers, doesn't affect runtime
-    import geopandas as gpd
-    from shapely.geometry import Polygon, MultiPolygon
-
-class SpatialFloodNetClient:
-    """A spatial-aware decorator for FloodNetClient.
+class SpatialFloodNetClient(FloodNetClient):
+    """A FloodNet client with spatial querying capabilities.
     
-    This class wraps a FloodNetClient instance and adds spatial querying capabilities
-    while maintaining the same basic interface.
+    Extends the base FloodNetClient with methods for spatial operations and GeoDataFrame conversions.
     """
     
-    def __init__(self, client: FloodNetClient):
-        if not SPATIAL_AVAILABLE:
-            raise ImportError(
-                "Spatial dependencies not installed. "
-                "Please install them with: conda env create -f spatial_env.yml"
-            )
-        self._client = client
-        
-    def get_deployments(self) -> gpd.GeoDataFrame:
+    def get_deployments_as_gdf(self) -> gpd.GeoDataFrame:
         """Get deployments as a GeoDataFrame."""
-        deployments = self._client.get_deployments()
+        deployments = super().get_deployments()
         return gpd.GeoDataFrame(
             [d.model_dump() for d in deployments],
             geometry=[Point(d.longitude, d.latitude) for d in deployments],
             crs="EPSG:4326"
         )
         
-    def get_deployments_within(
+    def get_deployments_within_geometry(
         self, 
         geometry: Union[Polygon, MultiPolygon, gpd.GeoSeries]
     ) -> List[Deployment]:
@@ -58,7 +36,7 @@ class SpatialFloodNetClient:
             raise ValueError("geometry must be Polygon, MultiPolygon or GeoSeries")
             
         # Get all deployments as GeoDataFrame
-        deployments_gdf = self.get_deployments()
+        deployments_gdf = self.get_deployments_as_gdf()
         
         # Spatial filter
         filtered = deployments_gdf[deployments_gdf.within(bounds.unary_union)]
@@ -82,21 +60,18 @@ class SpatialFloodNetClient:
             for _, row in filtered.iterrows()
         ]
         
-    def get_depth_data(
+    def get_depth_data_within_geometry(
         self,
         start_time: datetime,
         end_time: datetime,
-        geometry: Union[Polygon, MultiPolygon, gpd.GeoSeries] = None
+        geometry: Union[Polygon, MultiPolygon, gpd.GeoSeries]
     ) -> List[DepthReading]:
-        """Get depth readings for deployments, optionally filtered by geometry."""
-        if geometry is not None:
-            # Get spatially filtered deployments
-            deployments = self.get_deployments_within(geometry)
-            deployment_ids = [d.deployment_id for d in deployments]
-        else:
-            deployment_ids = None
+        """Get depth readings for deployments within a geometry."""
+        # Get spatially filtered deployments
+        deployments = self.get_deployments_within_geometry(geometry)
+        deployment_ids = [d.deployment_id for d in deployments]
             
-        return self._client.get_depth_data(
+        return super().get_depth_data(
             start_time=start_time,
             end_time=end_time,
             deployment_ids=deployment_ids
