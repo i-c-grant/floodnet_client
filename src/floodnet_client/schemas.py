@@ -15,7 +15,7 @@ class CRS(BaseModel):
 class Location(BaseModel):
     type: str
     crs: CRS
-    coordinates: List[float] = Field(..., min_items=2, max_items=2)
+    coordinates: List[float] = Field(..., min_length=2, max_length=2)
 
 class Deployment(BaseModel):
     deployment_id: str
