@@ -39,26 +39,14 @@ class SpatialFloodNetClient(FloodNetClient):
         deployments_gdf = self.get_deployments_as_gdf()
         
         # Spatial filter
-        filtered = deployments_gdf[deployments_gdf.within(bounds.unary_union)]
+        filtered = deployments_gdf[deployments_gdf.within(bounds.union_all())]
         
-        # Convert back to Deployment models
-        return [
-            Deployment(
-                deployment_id=row.deployment_id,
-                name=row.name,
-                date_deployed=row.date_deployed,
-                date_down=row.date_down,
-                deploy_type=row.deploy_type,
-                location=row.location,
-                image=row.image,
-                sensor_mount=row.sensor_mount,
-                mounted_over=row.mounted_over,
-                sensor_status=row.sensor_status,
-                longitude=row.geometry.x,
-                latitude=row.geometry.y
-            )
-            for _, row in filtered.iterrows()
-        ]
+        # Get the deployment_ids that fall within the geometry
+        deployment_ids = filtered.deployment_id.tolist()
+        
+        # Return the original Deployment objects that match these IDs
+        all_deployments = super().get_deployments()
+        return [d for d in all_deployments if d.deployment_id in deployment_ids]
         
     def get_depth_data_within_geometry(
         self,
