@@ -1,8 +1,9 @@
-"""Spatial extensions for the FloodNet client."""
-from typing import List, Union
-from datetime import datetime
+"""Spatial extension for the FloodNet client."""
+from typing import List, Union, Optional
+from datetime import datetime, timedelta
 import geopandas as gpd
 from shapely.geometry import Point, Polygon, MultiPolygon
+from shapely.validation import make_valid
 
 from .client import FloodNetClient
 from .schemas import Deployment, DepthReading
