@@ -13,5 +13,3 @@ dependencies:
   - shapely>=2.0.0
   # Development dependencies
   - pytest
-  - pip:
-    - -e .  # Install package in editable mode
