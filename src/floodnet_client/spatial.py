@@ -77,23 +77,44 @@ class SpatialFloodNetClient(FloodNetClient):
         # Get the deployment_ids that fall within the geometry
         deployment_ids = filtered.deployment_id.tolist()
         
-        # Return the original Deployment objects that match these IDs
-        all_deployments = super().get_deployments()
-        return [d for d in all_deployments if d.deployment_id in deployment_ids]
+        # Return the Deployment objects that match these IDs
+        return [d for d in deployments if d.deployment_id in deployment_ids]
         
     def get_depth_data_within_geometry(
         self,
         start_time: datetime,
         end_time: datetime,
         geometry: Union[Polygon, MultiPolygon, gpd.GeoSeries]
-    ) -> List[DepthReading]:
-        """Get depth readings for deployments within a geometry."""
+    ) -> gpd.GeoDataFrame:
+        """Get depth readings as a GeoDataFrame for deployments within a geometry."""
+        # Validate geometry first
+        bounds = self._validate_geometry(geometry)
+        
         # Get spatially filtered deployments
-        deployments = self.get_deployments_within_geometry(geometry)
+        deployments = self.get_deployments_within_geometry(bounds)
         deployment_ids = [d.deployment_id for d in deployments]
-            
-        return super().get_depth_data(
+        
+        # Get depth readings
+        readings = super().get_depth_data(
             start_time=start_time,
             end_time=end_time,
             deployment_ids=deployment_ids
+        )
+        
+        # Convert deployments to GeoDataFrame
+        gdf = self._deployments_to_gdf(deployments)
+
+        # Create DataFrame for readings
+        readings_data = [{
+            'deployment_id': r.deployment_id,
+            'time': r.time,
+            'depth_mm': r.depth_proc_mm
+        } for r in readings]
+        
+        # Merge readings with deployment locations
+        readings_df = gpd.GeoDataFrame(readings_data, crs="EPSG:4326")
+        return gdf[['deployment_id', 'geometry']].merge(
+            readings_df,
+            on='deployment_id', 
+            how='left'
         )
