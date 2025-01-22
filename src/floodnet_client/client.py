@@ -8,7 +8,7 @@ Provides core functionality for:
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import requests
@@ -80,7 +80,18 @@ class FloodNetClient:
                           
         Returns:
             List of validated DepthReading models
+            
+        Raises:
+            ValueError: If time range is invalid
         """
+        # Validate time range
+        if start_time >= end_time:
+            raise ValueError("start_time must be before end_time")
+        
+        max_duration = timedelta(days=1)
+        if (end_time - start_time) > max_duration: 
+            raise ValueError(f"Time range cannot exceed {max_duration}")
+
         # If no deployment IDs provided, get all deployments
         if deployment_ids is None:
             deployments = self.get_deployments()
