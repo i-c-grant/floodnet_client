@@ -140,5 +140,6 @@ class FloodNetClient:
                 logger.error("Error querying deployment %s: %s", dep_id, str(e))
                 continue
             
-        logger.info("Retrieved %d total depth readings", len(all_readings))
+        logger.info("Retrieved %d total depth readings from %d deployments", 
+                   len(all_readings), len(deployment_ids))
         return all_readings

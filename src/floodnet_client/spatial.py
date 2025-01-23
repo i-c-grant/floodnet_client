@@ -129,6 +129,4 @@ class SpatialFloodNetClient(FloodNetClient):
             how='right' # to drop deployments with no readings in time window
         )
         
-        logger.info("Returning %d readings from %d deployments", 
-                   len(result), result.deployment_id.nunique())
         return result
