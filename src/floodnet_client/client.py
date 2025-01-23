@@ -88,7 +88,7 @@ class FloodNetClient:
         if start_time >= end_time:
             raise ValueError("start_time must be before end_time")
         
-        max_duration = timedelta(days=1)
+        max_duration = timedelta(days=7)
         if (end_time - start_time) > max_duration: 
             raise ValueError(f"Time range cannot exceed {max_duration}")
 
