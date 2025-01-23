@@ -122,11 +122,14 @@ class FloodNetClient:
                             valid_reading = DepthReading.model_validate(reading)
                             valid_readings.append(valid_reading)
                         except ValueError as e:
-                            logger.info("Skipping invalid reading: %s", str(e))
+                            logger.debug("Skipping invalid reading: %s", str(e))
                             continue
                     
-                    logger.info("Got %d valid readings for deployment %s", 
-                                len(valid_readings), dep_id)
+                    if len(valid_readings) > 0:
+                        logger.info("Got %d valid readings for deployment %s", 
+                                  len(valid_readings), dep_id)
+                    else:
+                        logger.debug("No valid readings for deployment %s", dep_id)
                     all_readings.extend(valid_readings)
                     
                 except ValueError as e:

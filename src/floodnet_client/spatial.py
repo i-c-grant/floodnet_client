@@ -1,4 +1,5 @@
 """Spatial extension for the FloodNet client."""
+import logging
 from typing import List, Union, Optional
 from datetime import datetime, timedelta
 import geopandas as gpd
@@ -88,14 +89,19 @@ class SpatialFloodNetClient(FloodNetClient):
         geometry: Union[Polygon, MultiPolygon, gpd.GeoSeries]
     ) -> gpd.GeoDataFrame:
         """Get depth readings as a GeoDataFrame for deployments within a geometry."""
+        logger = logging.getLogger(__name__)
+        
         # Validate geometry first
         bounds = self._validate_geometry(geometry)
+        logger.debug("Validated geometry bounds: %s", bounds.total_bounds)
         
         # Get spatially filtered deployments
         deployments = self.get_deployments_within_geometry(bounds)
         deployment_ids = [d.deployment_id for d in deployments]
+        logger.info("Found %d deployments within geometry", len(deployment_ids))
         
         # Get depth readings
+        logger.info("Querying depth data from %s to %s", start_time, end_time)
         readings = super().get_depth_data(
             start_time=start_time,
             end_time=end_time,
@@ -115,7 +121,13 @@ class SpatialFloodNetClient(FloodNetClient):
         # Merge readings with deployment locations
         readings_df = gpd.GeoDataFrame(readings_data, crs="EPSG:4326")
         return gdf[['deployment_id', 'geometry']].merge(
+        logger.debug("Processed %d total readings", len(readings_df))
+
             readings_df,
             on='deployment_id', 
             how='left'
         )
+        
+        logger.info("Returning %d readings from %d deployments", 
+                   len(result), result.deployment_id.nunique())
+        return result
