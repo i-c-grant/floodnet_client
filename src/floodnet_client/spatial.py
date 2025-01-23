@@ -3,6 +3,7 @@ import logging
 from typing import List, Union, Optional
 from datetime import datetime, timedelta
 import geopandas as gpd
+import pandas as pd
 from shapely.geometry import Point, Polygon, MultiPolygon
 from shapely.validation import make_valid
 
@@ -111,21 +112,21 @@ class SpatialFloodNetClient(FloodNetClient):
         # Convert deployments to GeoDataFrame
         gdf = self._deployments_to_gdf(deployments)
 
-        # Create DataFrame for readings
+        # Create pandas DataFrame for readings
         readings_data = [{
             'deployment_id': r.deployment_id,
             'time': r.time,
             'depth_mm': r.depth_proc_mm
         } for r in readings]
         
-        # Merge readings with deployment locations
-        readings_df = gpd.GeoDataFrame(readings_data, crs="EPSG:4326")
-        return gdf[['deployment_id', 'geometry']].merge(
+        readings_df = pd.DataFrame(readings_data)
         logger.debug("Processed %d total readings", len(readings_df))
 
+        # Merge readings with deployment locations GeoDataFrame
+        result = gdf[['deployment_id', 'geometry']].merge(
             readings_df,
             on='deployment_id', 
-            how='left'
+            how='right' # to drop deployments with no readings in time window
         )
         
         logger.info("Returning %d readings from %d deployments", 
