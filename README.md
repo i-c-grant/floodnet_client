@@ -79,7 +79,7 @@ bbox = box(
 deployments_in_area = spatial_client.get_deployments_within(bbox)
 
 # Get depth data for sensors in area
-depth_data = spatial_client.get_depth_data(
+depth_data = spatial_client.get_depth_data_within(
     start_time=start,
     end_time=end,
     geometry=bbox

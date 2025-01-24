@@ -63,7 +63,7 @@ class SpatialFloodNetClient(FloodNetClient):
             
         return result
 
-    def get_deployments_within_geometry(
+    def get_deployments_within(
         self, 
         geometry: Union[Polygon, MultiPolygon, gpd.GeoSeries]
     ) -> List[Deployment]:
@@ -83,7 +83,7 @@ class SpatialFloodNetClient(FloodNetClient):
         # Return the Deployment objects that match these IDs
         return [d for d in deployments if d.deployment_id in deployment_ids]
         
-    def get_depth_data_within_geometry(
+    def get_depth_data_within(
         self,
         start_time: datetime,
         end_time: datetime,
@@ -97,7 +97,7 @@ class SpatialFloodNetClient(FloodNetClient):
         logger.debug("Validated geometry bounds: %s", bounds.total_bounds)
         
         # Get spatially filtered deployments
-        deployments = self.get_deployments_within_geometry(bounds)
+        deployments = self.get_deployments_within(bounds)
         deployment_ids = [d.deployment_id for d in deployments]
         logger.info("Found %d deployments within geometry", len(deployment_ids))
         

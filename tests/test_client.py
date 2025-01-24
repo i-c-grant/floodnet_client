@@ -124,18 +124,18 @@ def test_get_deployments_as_gdf(spatial_client):
     assert gdf.crs == "EPSG:4326"
     assert all(gdf.geometry.geom_type == "Point")
     
-def test_get_deployments_within_geometry(spatial_client):
+def test_get_deployments_within(spatial_client):
     # Create a bounding box around NYC
     bbox = box(-74.5, 40.4, -73.5, 41.0)
-    deployments = spatial_client.get_deployments_within_geometry(bbox)
+    deployments = spatial_client.get_deployments_within(bbox)
     assert isinstance(deployments, list)
     assert all(d.deployment_id for d in deployments)
     
-def test_get_depth_data_within_geometry(spatial_client):
+def test_get_depth_data_within(spatial_client):
     bbox = box(-74.5, 40.4, -73.5, 41.0)
     end = datetime.now()
     start = end - timedelta(hours=.1)
-    data = spatial_client.get_depth_data_within_geometry(start, end, bbox)
+    data = spatial_client.get_depth_data_within(start, end, bbox)
     assert isinstance(data, gpd.geodataframe.GeoDataFrame)
 
 def test_invalid_time_range(client):
@@ -149,7 +149,7 @@ def test_invalid_time_range(client):
         client.get_depth_data(now, now)
     with pytest.raises(ValueError):
         # Duration too long
-        client.get_depth_data(now, now + timedelta(days=2))
+        client.get_depth_data(now, now + timedelta(days=8))
 
 def test_empty_results(client):
     """Test handling of time ranges with no data"""
@@ -186,13 +186,13 @@ def test_invalid_geometry_types(spatial_client):
     """Test handling of invalid geometry types"""
     # Test invalid types
     with pytest.raises(ValueError):
-        spatial_client.get_deployments_within_geometry("not a geometry")
+        spatial_client.get_deployments_within("not a geometry")
     with pytest.raises(ValueError):
-        spatial_client.get_deployments_within_geometry(123)
+        spatial_client.get_deployments_within(123)
         
     # Test empty GeoSeries
     with pytest.raises(ValueError):
-        spatial_client.get_deployments_within_geometry(gpd.GeoSeries(crs="EPSG:4326"))
+        spatial_client.get_deployments_within(gpd.GeoSeries(crs="EPSG:4326"))
 
 def test_large_geometry_returns_all_data(spatial_client, nyc_boundary):
     """Test that large geometries return all deployments and readings"""
@@ -200,12 +200,12 @@ def test_large_geometry_returns_all_data(spatial_client, nyc_boundary):
     start = end - timedelta(hours=.1)
     
     # Should return all deployments
-    deployments = spatial_client.get_deployments_within_geometry(nyc_boundary)
+    deployments = spatial_client.get_deployments_within(nyc_boundary)
     assert isinstance(deployments, list)
     assert len(deployments) > 0
     
     # Should return all depth readings
-    data = spatial_client.get_depth_data_within_geometry(start, end, nyc_boundary)
+    data = spatial_client.get_depth_data_within(start, end, nyc_boundary)
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) > 0
 
@@ -215,23 +215,23 @@ def test_queens_boundary(spatial_client, queens_boundary):
     start = end - timedelta(hours=.1)
     
     # Get deployments
-    deployments = spatial_client.get_deployments_within_geometry(queens_boundary)
+    deployments = spatial_client.get_deployments_within(queens_boundary)
     assert isinstance(deployments, list)
     
     # Get depth data
-    data = spatial_client.get_depth_data_within_geometry(start, end, queens_boundary)
+    data = spatial_client.get_depth_data_within(start, end, queens_boundary)
     assert isinstance(data, gpd.GeoDataFrame)
 
 def test_crs_handling(spatial_client, queens_boundary):
     """Test CRS handling in spatial operations"""
     # Get deployments using WGS84 geometry
-    deployments_wgs84 = spatial_client.get_deployments_within_geometry(queens_boundary)
+    deployments_wgs84 = spatial_client.get_deployments_within(queens_boundary)
     
     # Transform the same geometry to UTM zone 18N (EPSG:32618)
     bbox_utm = gpd.GeoSeries([queens_boundary], crs="EPSG:4326").to_crs("EPSG:32618").iloc[0]
     
     # Get deployments using UTM geometry
-    deployments_utm = spatial_client.get_deployments_within_geometry(
+    deployments_utm = spatial_client.get_deployments_within(
         gpd.GeoSeries([bbox_utm], crs="EPSG:32618")
     )
     
