@@ -39,19 +39,23 @@ client = FloodNetClient()
 deployments = client.get_deployments()
 print(f"Found {len(deployments)} deployments")
 
-# Get depth data for last 24 hours
+# Get depth data for last hour
 end = datetime.now()
-start = end - timedelta(days=1)
+start = end - timedelta(hours=1)
 depth_data = client.get_depth_data(start, end)
+print(f"Got {len(depth_data)} readings")
 
 # Get data for specific deployments
-deployment_ids = ['BKLN_001', 'BKLN_002']
 specific_data = client.get_depth_data(
     start_time=start,
     end_time=end,
-    deployment_ids=deployment_ids
+    deployment_ids=['daily_new_falcon', 'weekly_poetic_guinea']
 )
 ```
+
+The client automatically caches deployment data for 24 hours to improve performance. You can:
+- Force a refresh with `get_deployments(force_refresh=True)`
+- Clear the cache with `refresh_deployments_cache()`
 
 ### Spatial Features
 
@@ -82,29 +86,21 @@ depth_data = spatial_client.get_depth_data(
 )
 ```
 
-## Development
+## Client Architecture
 
-1. Clone the repository:
-```bash
-git clone https://github.com/i-c-grant/floodnet-client.git
-cd floodnet-client
-```
+The package provides two client classes:
 
-2. Create development environment:
-```bash
-conda env create -f environment.yaml
-conda activate floodnet
-```
+1. **FloodNetClient** - Core client with no spatial dependencies
+   - Lightweight with only `requests` and `pydantic` requirements
+   - Ideal for containerized environments or when spatial operations aren't needed
+   - Provides basic API access and caching
 
-3. Install in editable mode:
-```bash
-pip install -e ".[spatial]"
-```
+2. **SpatialFloodNetClient** - Extends the base client with spatial capabilities
+   - Requires `geopandas` and `shapely`
+   - Adds GeoDataFrame conversions and spatial queries
+   - Useful for GIS analysis and visualization
 
-4. Run tests:
-```bash
-pytest
-```
+This separation allows you to use the core API functionality without installing spatial dependencies when they're not needed.
 
 ## License
 
