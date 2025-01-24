@@ -39,11 +39,55 @@ def nyc_boundary():
     return nyc.geometry.iloc[0]
 
 def test_get_deployments(client):
+    # First call should fetch fresh data
     deployments = client.get_deployments()
     assert len(deployments) > 0
     assert all(d.deployment_id for d in deployments)
     assert all(hasattr(d, 'latitude') for d in deployments)
     assert all(hasattr(d, 'longitude') for d in deployments)
+
+def test_deployments_cache(client):
+    # First call should cache
+    deployments1 = client.get_deployments()
+    
+    # Second call should use cache
+    deployments2 = client.get_deployments()
+    assert deployments1 == deployments2
+    
+    # Force refresh should get fresh data
+    deployments3 = client.get_deployments(force_refresh=True)
+    assert deployments1 == deployments3  # Content should match, but fresh fetch
+    
+    # Clear cache and verify fresh fetch
+    client.refresh_deployments_cache()
+    deployments4 = client.get_deployments()
+    assert deployments1 == deployments4  # Content should match, but fresh fetch
+
+def test_cache_expiry(client, monkeypatch):
+    from floodnet_client.client import CACHE_EXPIRY
+    
+    # Get initial data
+    deployments1 = client.get_deployments()
+    
+    # Mock time to be just before expiry
+    class MockDatetime:
+        @classmethod
+        def now(cls):
+            return datetime.now() + CACHE_EXPIRY - timedelta(seconds=1)
+    
+    monkeypatch.setattr('floodnet_client.client.datetime', MockDatetime)
+    deployments2 = client.get_deployments()
+    assert deployments1 == deployments2  # Cache should still be valid
+    
+    # Mock time to be after expiry
+    class MockExpiredDatetime:
+        @classmethod
+        def now(cls):
+            return datetime.now() + CACHE_EXPIRY + timedelta(seconds=1)
+    
+    monkeypatch.setattr('floodnet_client.client.datetime', MockExpiredDatetime)
+    deployments3 = client.get_deployments()
+    assert deployments1 == deployments3  # Content should match, but fresh fetch
         
 def test_get_depth_data(client):
     end = datetime.now()

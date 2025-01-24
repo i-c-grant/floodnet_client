@@ -5,11 +5,12 @@ Provides core functionality for:
 - Fetching deployment locations 
 - Retrieving time-series depth measurements
 - Basic temporal filtering
+- Caching of deployment data
 """
 
 import logging
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import requests
 
@@ -18,19 +19,31 @@ from .schemas import Deployment, DeploymentResponse, DepthReading, DepthResponse
 logger = logging.getLogger(__name__)
 
 API_BASE: str = "https://api.dev.floodlabs.nyc/api/rest/"
+CACHE_EXPIRY = timedelta(days=1)
 
 class FloodNetClient:
     """Lightweight client for fetching FloodNet sensor data"""
     
     def __init__(self):
         self.base_url = API_BASE
+        self._deployments_cache: Optional[Tuple[datetime, List[Deployment]]] = None
         
-    def get_deployments(self) -> List[Deployment]:
+    def get_deployments(self, force_refresh: bool = False) -> List[Deployment]:
         """Get all deployment locations and metadata.
         
+        Args:
+            force_refresh: If True, bypass cache and fetch fresh data
+            
         Returns:
             List of validated Deployment models with processed coordinates
         """
+        # Check cache first
+        if not force_refresh and self._deployments_cache:
+            cache_time, deployments = self._deployments_cache
+            if datetime.now() - cache_time < CACHE_EXPIRY:
+                logger.debug("Returning cached deployments from %s", cache_time)
+                return deployments
+
         logger.info("Fetching deployment data from API")
         try:
             response = requests.get(f"{self.base_url}deployments/flood")
@@ -49,11 +62,19 @@ class FloodNetClient:
                 deployment.latitude = deployment.location.coordinates[1]
                 
             logger.info("Processed %d deployment records", len(data.deployments))
+            
+            # Update cache
+            self._deployments_cache = (datetime.now(), data.deployments)
             return data.deployments
             
         except Exception as e:
             logger.error("Error fetching deployments: %s", str(e))
             raise
+
+    def refresh_deployments_cache(self) -> None:
+        """Force refresh of the deployments cache."""
+        logger.info("Refreshing deployments cache")
+        self._deployments_cache = None
 
     def get_deployment_ids(self) -> List[str]:
         """Get a list of all deployment IDs.
